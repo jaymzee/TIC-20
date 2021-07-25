@@ -32,7 +32,9 @@ struct Screen *CreateScreen(uint32_t pencolor, uint32_t renderer_flags)
         fprintf(stderr, "Create Renderer:%s\n", SDL_GetError());
         return NULL;
     }
-    //SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    if (SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)) {
+        fprintf(stderr, "Blend Mode:%s\n", SDL_GetError());
+    }
 
     sans18 = TTF_OpenFont("DejaVuSans.ttf", 18);
     if (!sans18) {
@@ -44,7 +46,7 @@ struct Screen *CreateScreen(uint32_t pencolor, uint32_t renderer_flags)
     screen->window = window;
     screen->renderer = renderer;
     screen->font[0] = sans18;
-    screen->pencolor = pencolor;
+    SetPenColor(screen, pencolor);
 
     return screen;
 }
