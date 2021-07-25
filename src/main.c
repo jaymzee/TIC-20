@@ -1,7 +1,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include "screen.h"
-#include "lua.h"
+#include "tic.h"
 #include "colors.h"
 
 struct Screen *screen = NULL;
@@ -33,10 +33,10 @@ int main(int argc, char *argv[])
     }
 
     // execute lua file
-    fprintf(stderr, "Executing %s\n", filename);
-    int exitcode = LuaMain(filename);
+    fprintf(stderr, "Starting TIC-20 with %s\n", filename);
+    int exitcode = TicMain(filename);
     if (exitcode) {
-        fprintf(stderr, "%s\n", GetLuaError());
+        fprintf(stderr, "%s\n", GetTicError());
     } else {
         fprintf(stderr, "Shutting down\n");
     }

@@ -1,6 +1,6 @@
 #include <lualib.h>
 #include <lauxlib.h>
-#include "lua.h"
+#include "tic.h"
 #include "screen.h"
 
 extern struct Screen *screen;
@@ -65,7 +65,7 @@ static int delay(lua_State *L)
     return 0;   // number of results
 }
 
-int LuaMain(const char *filename)
+int TicMain(const char *filename)
 {
     // Create new Lua state and load the lua libraries
     lua_State *L = luaL_newstate();
@@ -96,6 +96,6 @@ int LuaMain(const char *filename)
 }
 
 // retreive saved error message
-const char *GetLuaError(void) {
+const char *GetTicError(void) {
     return error;
 }
