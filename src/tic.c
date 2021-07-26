@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <lualib.h>
 #include <lauxlib.h>
 #include "display.h"
@@ -48,6 +49,26 @@ static int pencolor(lua_State *L)
     return 0;
 }
 
+static int loadfont(lua_State *L)
+{
+    Display *display = GetDisplay(L);
+    int slot = luaL_checknumber(L, 1);
+    const char *fontpath = luaL_checkstring(L, 2);
+    int fontsize = luaL_checknumber(L, 3);
+
+    if (slot < 0 || slot >= MAX_FONTS) {
+        luaL_error(L, "slot must be a number from 0 to %d", MAX_FONTS - 1);
+    }
+
+    const char *err_msg = LoadFont(display, slot, fontpath, fontsize);
+
+    if (err_msg) {
+        luaL_error(L, "loadfont: %s", err_msg);
+    }
+
+    return 0;
+}
+
 static int text(lua_State *L)
 {
     Display *display = GetDisplay(L);
@@ -55,8 +76,19 @@ static int text(lua_State *L)
     double y = luaL_checknumber(L, 2);
     const char *s = luaL_checkstring(L, 3);
     unsigned int color = luaL_checknumber(L, 4);
+    int slot = 0;
 
-    DrawText(display, x, y, s, 0, color);
+    if (lua_gettop(L) >= 5) {
+        slot = luaL_checknumber(L, 5);
+    }
+
+    if (slot < 0 || slot >= MAX_FONTS) {
+        luaL_error(L, "slot must be a number from 0 to %d", MAX_FONTS - 1);
+    }
+
+    if (!DrawText(display, x, y, s, color, slot)) {
+        luaL_error(L, "DrawText failed: is there a font in slot %d?", slot);
+    }
 
     return 0;
 }
@@ -98,6 +130,7 @@ int TicExec(const char *filename, Display *display)
 
     // Expose C functions to the lua environment
     lua_newtable(L);
+    addfunction(L, loadfont);
     addfunction(L, clear);
     addfunction(L, pencolor);
     addfunction(L, text);

@@ -22,7 +22,7 @@ Display *CreateDisplay(const char *window_title,
 {
     SDL_Window *window;
     SDL_Renderer *renderer;
-    TTF_Font *sans18;
+    TTF_Font *font;
 
     // create a winodw, renderer, and font
 
@@ -32,13 +32,13 @@ Display *CreateDisplay(const char *window_title,
         SCREEN_WIDTH, SCREEN_HEIGHT,
         SDL_WINDOW_SHOWN
     );
-    if (!window) {
+    if (window == NULL) {
         fprintf(stderr, "Create Window:%s\n", SDL_GetError());
         return NULL;
     }
 
     renderer = SDL_CreateRenderer(window, -1, renderer_flags);
-    if (!renderer) {
+    if (renderer == NULL) {
         fprintf(stderr, "Create Renderer:%s\n", SDL_GetError());
         return NULL;
     }
@@ -46,8 +46,8 @@ Display *CreateDisplay(const char *window_title,
         fprintf(stderr, "Blend Mode:%s\n", SDL_GetError());
     }
 
-    sans18 = TTF_OpenFont("fonts" SLASH "DejaVuSans.ttf", 18);
-    if (!sans18) {
+    font = TTF_OpenFont("fonts" SLASH "DejaVuSans.ttf", 18);
+    if (font == NULL) {
         fprintf(stderr, "Open Font: %s\n", TTF_GetError());
         return NULL;
     }
@@ -55,7 +55,7 @@ Display *CreateDisplay(const char *window_title,
     Display *display = calloc(1, sizeof(Display));
     display->window = window;
     display->renderer = renderer;
-    display->font[0] = sans18;
+    display->font[0] = font;
     PenColor(display, pencolor);
 
     return display;
@@ -63,11 +63,29 @@ Display *CreateDisplay(const char *window_title,
 
 void DestroyDisplay(Display *display)
 {
+    for (int i = 0; i < MAX_FONTS; i++) {
+        TTF_Font *font = display->font[i];
+        if (font) {
+            TTF_CloseFont(font);
+        }
+    }
     SDL_DestroyRenderer(display->renderer);
     SDL_DestroyWindow(display->window);
-    display->renderer = NULL;
-    display->window = NULL;
     free(display);
+}
+
+// return error string on failure, null on success
+const char *LoadFont(Display *display, uint8_t slot, const char *fontpath, int size)
+{
+    TTF_Font *font = TTF_OpenFont(fontpath, size);
+
+    if (!font) {
+        return TTF_GetError();
+    }
+
+    display->font[slot] = font;
+
+    return NULL;
 }
 
 // drawText renders a string to screen coordinates x and y in the
@@ -75,13 +93,19 @@ void DestroyDisplay(Display *display)
 //   - creates surface
 //   - a texture from that surface
 //   - renders the texture
-void DrawText(const Display *display,
-              int x, int y, const char *str,
-              int font_number, uint32_t color)
+// return 1 on success, 0 on failure
+// the usual failure is an invalid font number
+int DrawText(const Display *display,
+             int x, int y, const char *str,
+             uint32_t color, uint8_t font_slot)
 {
     SDL_Renderer *renderer = display->renderer;
-    TTF_Font *font = display->font[font_number];
+    TTF_Font *font = display->font[font_slot];
     SDL_Color color_ = { color >> 24, color >> 16, color >> 8, color };
+
+    if (font == NULL) {
+        return 0;
+    }
 
     SDL_Rect rect = {x, y, 0, 0};
     SDL_Surface* surface = TTF_RenderText_Blended(font, str, color_);
@@ -90,6 +114,8 @@ void DrawText(const Display *display,
     SDL_RenderCopy(renderer, texture, NULL, &rect);
     SDL_DestroyTexture(texture);
     SDL_FreeSurface(surface);
+
+    return 1;
 }
 
 void ClearScreen(const Display *display, uint32_t color)

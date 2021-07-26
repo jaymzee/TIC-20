@@ -8,7 +8,7 @@
 #define SCREEN_CENTER_X (SCREEN_WIDTH / 2)
 #define SCREEN_CENTER_Y (SCREEN_HEIGHT / 2)
 
-#define MAX_FONTS 1
+#define MAX_FONTS 256
 
 typedef struct Display Display;
 
@@ -26,10 +26,11 @@ void DrawLine(const Display *, int x1, int y1, int x2, int y2);
 //   - creates surface
 //   - a texture from that surface
 //   - renders the texture
-void DrawText(const Display *,
-              int x, int y, const char *str,
-              int font, uint32_t color);
+int DrawText(const Display *,
+             int x, int y, const char *str,
+             uint32_t color, uint8_t font_slot);
 void FlipDisplay(const Display *);
 void PenColor(Display *, uint32_t color);
+const char *LoadFont(Display *display, uint8_t slot, const char *fontpath, int size);
 
 #endif
