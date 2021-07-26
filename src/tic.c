@@ -21,10 +21,9 @@ static const char *error_message = NULL;
 // bits can be stolen if you consider alignment.
 static Display *GetDisplay(lua_State *L)
 {
-    lua_getglobal(L, "display");
-    lua_getfield(L, -1, "_baseaddr");
+    lua_getglobal(L, "__display__");
     Display *display = (Display *)(intptr_t)luaL_checknumber(L, -1);
-    lua_pop(L, 2);
+    lua_pop(L, 1);
 
     return display;
 }
@@ -104,13 +103,13 @@ int TicExec(const char *filename, Display *display)
     addfunction(L, text);
     addfunction(L, line);
     addfunction(L, flip);
-    lua_pushnumber(L, (intptr_t)display);
-    lua_setfield(L, -2, "_baseaddr");
     lua_setglobal(L, "display");
     lua_pushcfunction(L, delay);
     lua_setglobal(L, "delay");
     lua_pushstring(L, filename);
     lua_setglobal(L, "__name__");
+    lua_pushnumber(L, (intptr_t)display);
+    lua_setglobal(L, "__display__");
 
     // Tell Lua to execute a lua file
     int status = luaL_dofile(L, filename);
