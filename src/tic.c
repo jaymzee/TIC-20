@@ -113,7 +113,7 @@ int TicExec(const char *filename, Display *display)
 
     // Tell Lua to execute a lua file
     int status = luaL_dofile(L, filename);
-    if (status != LUA_OK) {
+    if (status) {
         error_message = luaL_checkstring(L, -1);
     }
 
