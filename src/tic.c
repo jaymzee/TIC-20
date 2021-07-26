@@ -10,6 +10,8 @@
 
 static const char *error_message = NULL;
 
+extern volatile int keepRunning;
+
 // Retreive the Display base address from lua globals.
 // It's stored as a lua number (double precision) which works on current
 // amd64 hardware but will fail on hareware that uses more than 52 bits for
@@ -60,10 +62,9 @@ static int loadfont(lua_State *L)
         luaL_error(L, "slot must be a number from 0 to %d", MAX_FONTS - 1);
     }
 
-    const char *err_msg = LoadFont(display, slot, fontpath, fontsize);
-
-    if (err_msg) {
-        luaL_error(L, "loadfont: %s", err_msg);
+    const char *error = LoadFont(display, slot, fontpath, fontsize);
+    if (error) {
+        luaL_error(L, "loadfont: %s", error);
     }
 
     return 0;
@@ -122,6 +123,28 @@ static int delay(lua_State *L)
     return 0;
 }
 
+static int peek(lua_State *L)
+{
+    unsigned int addr = luaL_checknumber(L, 1);
+    int result = 0;
+
+    if (addr == 0x55aa) {
+        result = keepRunning;
+    }
+
+    lua_pushinteger(L, result);
+
+    return 1;
+}
+
+static int poke(lua_State *L)
+{
+    //unsigned int addr = luaL_checknumber(L, 1);
+    //unsigned int data = luaL_checknumber(L, 2);
+
+    return 0;
+}
+
 int TicExec(const char *filename, Display *display)
 {
     // Create new Lua state and load the lua libraries
@@ -139,6 +162,10 @@ int TicExec(const char *filename, Display *display)
     lua_setglobal(L, "display");
     lua_pushcfunction(L, delay);
     lua_setglobal(L, "delay");
+    lua_pushcfunction(L, peek);
+    lua_setglobal(L, "peek");
+    lua_pushcfunction(L, poke);
+    lua_setglobal(L, "poke");
     lua_pushstring(L, filename);
     lua_setglobal(L, "__name__");
     lua_pushnumber(L, (intptr_t)display);

@@ -1,9 +1,17 @@
 #include <stdio.h>
+#include <signal.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include "display.h"
 #include "tic.h"
 #include "colors.h"
+
+volatile int keepRunning = 1;
+
+void intHandler(int dummy) {
+    keepRunning = 0;
+    printf("caught\n");
+}
 
 int main(int argc, char *argv[])
 {
@@ -14,6 +22,8 @@ int main(int argc, char *argv[])
     if (argc > 1) {
         filename = argv[1];
     }
+
+    signal(SIGINT, intHandler);
 
     // Initialize SDL
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {

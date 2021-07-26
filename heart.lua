@@ -6,6 +6,8 @@ CX = 320
 CY = 240
 R = 200
 
+KEEP_RUNNING = 0x55aa -- flag in TIC memory (readonly)
+
 function frame (factor)
 	for n = 0, POINTS do
 		local n1 = n
@@ -18,6 +20,7 @@ function frame (factor)
 		local y2 = R * math.sin(phi)
 		display.line(CX - x1, CY - y1, CX - x2, CY - y2)
 	end
+	display.text(10, 10, string.format("factor %.1f", factor), YELLOW)
 	display.flip()
 	display.clear(BLACK)
 end
@@ -32,7 +35,7 @@ function main ()
 	display.pencolor(0x00ff0040)
 
 	factor = 1
-	for n = 1,1000,1 do
+	while peek(KEEP_RUNNING) ~= 0 do
 		frame(factor)
 		factor = factor + 0.001
 	end
