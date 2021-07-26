@@ -10,7 +10,8 @@
 
 static const char *error_message = NULL;
 
-extern volatile int keepRunning;
+// 64 KB of ram
+volatile uint8_t ram[0x10000];
 
 // Retreive the Display base address from lua globals.
 // It's stored as a lua number (double precision) which works on current
@@ -125,14 +126,13 @@ static int delay(lua_State *L)
 
 static int peek(lua_State *L)
 {
-    unsigned int addr = luaL_checknumber(L, 1);
-    int result = 0;
+    int addr = luaL_checknumber(L, 1);
 
-    if (addr == 0x55aa) {
-        result = keepRunning;
+    if (addr < 0 || addr > 0xffff) {
+        luaL_error(L, "address must be within 0 to 0xffff");
     }
 
-    lua_pushinteger(L, result);
+    lua_pushinteger(L, ram[addr]);
 
     return 1;
 }

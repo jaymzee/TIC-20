@@ -6,11 +6,10 @@
 #include "tic.h"
 #include "colors.h"
 
-volatile int keepRunning = 1;
+extern volatile uint8_t ram[];
 
 void intHandler(int dummy) {
-    keepRunning = 0;
-    printf("caught\n");
+    ram[0x55aa] = 0;
 }
 
 int main(int argc, char *argv[])
@@ -23,6 +22,7 @@ int main(int argc, char *argv[])
         filename = argv[1];
     }
 
+    ram[0x55aa] = 1;
     signal(SIGINT, intHandler);
 
     // Initialize SDL
