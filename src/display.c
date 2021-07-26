@@ -10,15 +10,18 @@ typedef struct Display {
     uint32_t pencolor;
 } Display;
 
-Display *CreateDisplay(uint32_t color, uint32_t renderer_flags)
+Display *CreateDisplay(const char *window_title,
+                       uint32_t pencolor,
+                       uint32_t renderer_flags)
 {
     SDL_Window *window;
     SDL_Renderer *renderer;
     TTF_Font *sans18;
 
     // create a winodw, renderer, and font
+
     window = SDL_CreateWindow(
-        "lua",
+        window_title,
         SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
         SCREEN_WIDTH, SCREEN_HEIGHT,
         SDL_WINDOW_SHOWN
@@ -47,7 +50,7 @@ Display *CreateDisplay(uint32_t color, uint32_t renderer_flags)
     display->window = window;
     display->renderer = renderer;
     display->font[0] = sans18;
-    PenColor(display, color);
+    PenColor(display, pencolor);
 
     return display;
 }

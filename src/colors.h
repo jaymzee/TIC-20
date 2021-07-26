@@ -11,9 +11,9 @@
 #define CYAN 0x00ffffff
 #define BLUE 0x0000ffff
 #define MAGENTA 0xff00ffff
-#define BROWN 0x808000ff
-#define DARK_GRAY 0x555555ff
-#define LIGHT_GRAY 0xaaaaaaff
 #define WHITE 0xffffffff
+#define LIGHT_GRAY 0xaaaaaaff
+#define DARK_GRAY 0x555555ff
+#define BROWN 0xaa5500ff
 
 #endif

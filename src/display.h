@@ -12,10 +12,12 @@
 
 typedef struct Display Display;
 
-Display *CreateDisplay(uint32_t color, uint32_t flags);
+Display *CreateDisplay(const char *window_title,
+                       uint32_t pencolor,
+                       uint32_t renderer_flags);
 void DestroyDisplay(Display *);
 
-void ClearScreen(const Display *, uint32_t color);
+void ClearScreen(const Display *, uint32_t backcolor);
 void Delay(uint32_t msec);
 void DrawLine(const Display *, int x1, int y1, int x2, int y2);
 

@@ -24,14 +24,12 @@ int main(int argc, char *argv[])
         fprintf(stderr, "TTF Init: %s\n", TTF_GetError());
         return 1;
     }
-    display = CreateDisplay(LIGHT_GRAY, SDL_RENDERER_ACCELERATED);
+    display = CreateDisplay("TIC-20", GREEN, SDL_RENDERER_ACCELERATED);
     if (display == NULL) {
-        fprintf(stderr, "Failed to Create Display.");
         return 1;
     }
 
     // execute lua file
-    fprintf(stderr, "Executing %s\n", filename);
     int status = TicExec(filename, display);
     if (status) {
         fprintf(stderr, "%s\n", TicError());

@@ -109,6 +109,8 @@ int TicExec(const char *filename, Display *display)
     lua_setglobal(L, "display");
     lua_pushcfunction(L, delay);
     lua_setglobal(L, "delay");
+    lua_pushstring(L, filename);
+    lua_setglobal(L, "__name__");
 
     // Tell Lua to execute a lua file
     int status = luaL_dofile(L, filename);
