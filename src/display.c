@@ -40,7 +40,7 @@ Display *CreateDisplay(const char *window_title,
         fprintf(stderr, "Blend Mode:%s\n", SDL_GetError());
     }
 
-    sans18 = TTF_OpenFont("DejaVuSans.ttf", 18);
+    sans18 = TTF_OpenFont("fonts/DejaVuSans.ttf", 18);
     if (!sans18) {
         fprintf(stderr, "Open Font: %s\n", TTF_GetError());
         return NULL;
