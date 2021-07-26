@@ -3,12 +3,6 @@
 #include <SDL2/SDL_ttf.h>
 #include "display.h"
 
-#ifdef _WIN32
-#define SLASH "\\"
-#else
-#define SLASH "/"
-#endif
-
 typedef struct Display {
     SDL_Window *window;
     SDL_Renderer *renderer;
@@ -46,7 +40,7 @@ Display *CreateDisplay(const char *window_title,
         fprintf(stderr, "Blend Mode:%s\n", SDL_GetError());
     }
 
-    font = TTF_OpenFont("fonts" SLASH "DejaVuSans.ttf", 18);
+    font = TTF_OpenFont("fonts/DejaVuSans.ttf", 18);
     if (font == NULL) {
         fprintf(stderr, "Open Font: %s\n", TTF_GetError());
         return NULL;
