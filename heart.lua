@@ -25,7 +25,10 @@ end
 function main ()
 	local factor
 
-	print("Hello from lua")
+	print('see the video:')
+	print('Times Tables, Mandelbrot and the Heart of Mathematics')
+	print('by Mathologer')
+
 	display.pencolor(0x00ff0040)
 
 	factor = 1
@@ -36,5 +39,3 @@ function main ()
 end
 
 main()
-
-return 42, 88
