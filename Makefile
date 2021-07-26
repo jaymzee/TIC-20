@@ -5,5 +5,5 @@ LFLAGS = -llua5.2 -lSDL2 -lSDL2_ttf
 vpath %.c src
 vpath %.h src
 
-tic20 : main.c screen.c tic.c
+tic20 : main.c display.c tic.c
 	$(CC) $(CFLAGS) -o $@ $^ $(LFLAGS)

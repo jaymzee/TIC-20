@@ -1,46 +1,40 @@
-green = 0x00ff0040
-yellow = 0xffff00ff
-black = 0x000000ff
-fps = 30
+require 'colors'
 
-points = 500
-cx = 320
-cy = 240
-radius = 200
-factor = 2
+FPS = 30
+POINTS = 500
+CX = 320
+CY = 240
+R = 200
 
-print("Hello from lua")
-
-pencolor(green)
-
-function draw_frame(factor)
-	local n1, n2, theta, phi, x1, y1, x2, y2
-
-	clear(black)
-
-	for n = 0, points do
-		n1 = n
-		n2 = factor * n1
-		theta = 2 * math.pi * n1 / points
-		phi = 2 * math.pi * n2 / points
-		x1 = radius * math.cos(theta)
-		y1 = radius * math.sin(theta)
-		x2 = radius * math.cos(phi)
-		y2 = radius * math.sin(phi)
-		line(cx - x1, cy - y1, cx - x2, cy - y2)
+function frame (factor)
+	for n = 0, POINTS do
+		local n1 = n
+		local n2 = factor * n1
+		local theta = 2 * math.pi * n1 / POINTS
+		local phi = 2 * math.pi * n2 / POINTS
+		local x1 = R * math.cos(theta)
+		local y1 = R * math.sin(theta)
+		local x2 = R * math.cos(phi)
+		local y2 = R * math.sin(phi)
+		display.line(CX - x1, CY - y1, CX - x2, CY - y2)
 	end
-
-	flip()
+	display.flip()
+	display.clear(BLACK)
 end
 
-function main()
+function main ()
 	local factor
 
+	print("Hello from lua")
+	display.pencolor(0x00ff0040)
+
 	factor = 1
-	for n = 1, 1000 do
-		draw_frame(factor)
+	for n = 1,1000,1 do
+		frame(factor)
 		factor = factor + 0.001
 	end
 end
 
 main()
+
+return 42, 88

@@ -1,15 +1,16 @@
+#include <stdio.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
-#include "screen.h"
+#include "display.h"
 
-struct Screen {
+typedef struct Display {
     SDL_Window *window;
     SDL_Renderer *renderer;
     TTF_Font *font[MAX_FONTS];
     uint32_t pencolor;
-};
+} Display;
 
-struct Screen *CreateScreen(uint32_t pencolor, uint32_t renderer_flags)
+Display *CreateDisplay(uint32_t color, uint32_t renderer_flags)
 {
     SDL_Window *window;
     SDL_Renderer *renderer;
@@ -42,21 +43,22 @@ struct Screen *CreateScreen(uint32_t pencolor, uint32_t renderer_flags)
         return NULL;
     }
 
-    struct Screen *screen = calloc(1, sizeof(struct Screen));
-    screen->window = window;
-    screen->renderer = renderer;
-    screen->font[0] = sans18;
-    SetPenColor(screen, pencolor);
+    Display *display = calloc(1, sizeof(Display));
+    display->window = window;
+    display->renderer = renderer;
+    display->font[0] = sans18;
+    PenColor(display, color);
 
-    return screen;
+    return display;
 }
 
-void DestroyScreen(struct Screen *screen)
+void DestroyDisplay(Display *display)
 {
-    SDL_DestroyRenderer(screen->renderer);
-    SDL_DestroyWindow(screen->window);
-    screen->renderer = NULL;
-    screen->window = NULL;
+    SDL_DestroyRenderer(display->renderer);
+    SDL_DestroyWindow(display->window);
+    display->renderer = NULL;
+    display->window = NULL;
+    free(display);
 }
 
 // drawText renders a string to screen coordinates x and y in the
@@ -64,12 +66,12 @@ void DestroyScreen(struct Screen *screen)
 //   - creates surface
 //   - a texture from that surface
 //   - renders the texture
-void DrawText(const struct Screen *screen,
+void DrawText(const Display *display,
               int x, int y, const char *str,
               int font_number, uint32_t color)
 {
-    SDL_Renderer *renderer = screen->renderer;
-    TTF_Font *font = screen->font[font_number];
+    SDL_Renderer *renderer = display->renderer;
+    TTF_Font *font = display->font[font_number];
     SDL_Color color_ = { color >> 24, color >> 16, color >> 8, color };
 
     SDL_Rect rect = {x, y, 0, 0};
@@ -81,36 +83,36 @@ void DrawText(const struct Screen *screen,
     SDL_FreeSurface(surface);
 }
 
-void ClearScreen(const struct Screen *screen, uint32_t color)
+void ClearScreen(const Display *display, uint32_t color)
 {
-    SDL_Renderer *renderer = screen->renderer;
+    SDL_Renderer *renderer = display->renderer;
     uint8_t r = color >> 24, g = color >> 16, b = color >> 8, a = color;
 
     SDL_SetRenderDrawColor(renderer, r, g, b, a);
     SDL_RenderClear(renderer);
 
-    color = screen->pencolor;
+    color = display->pencolor;
     r = color >> 24, g = color >> 16, b = color >> 8, a = color;
 
     SDL_SetRenderDrawColor(renderer, r, g, b, a);
 }
 
-void SetPenColor(struct Screen *screen, uint32_t color)
+void PenColor(Display *display, uint32_t color)
 {
     uint8_t r = color >> 24, g = color >> 16, b = color >> 8, a = color;
 
-    screen->pencolor = color;
-    SDL_SetRenderDrawColor(screen->renderer, r, g, b, a);
+    display->pencolor = color;
+    SDL_SetRenderDrawColor(display->renderer, r, g, b, a);
 }
 
-void DrawLine(const struct Screen *screen, int x1, int y1, int x2, int y2)
+void DrawLine(const Display *display, int x1, int y1, int x2, int y2)
 {
-    SDL_RenderDrawLine(screen->renderer, x1, y1, x2, y2);
+    SDL_RenderDrawLine(display->renderer, x1, y1, x2, y2);
 }
 
-void Flip(const struct Screen *screen)
+void FlipDisplay(const Display *display)
 {
-    SDL_RenderPresent(screen->renderer);
+    SDL_RenderPresent(display->renderer);
 }
 
 void Delay(uint32_t msec)

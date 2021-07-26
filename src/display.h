@@ -1,3 +1,6 @@
+#ifndef TIC_DISPLAY_H_INCLUDED
+#define TIC_DISPLAY_H_INCLUDED
+
 #include <stdint.h>
 
 #define SCREEN_WIDTH 640
@@ -7,20 +10,24 @@
 
 #define MAX_FONTS 1
 
-struct Screen *CreateScreen(uint32_t pencolor, uint32_t flags);
-void DestroyScreen(struct Screen *);
+typedef struct Display Display;
 
-void ClearScreen(const struct Screen *, uint32_t color);
+Display *CreateDisplay(uint32_t color, uint32_t flags);
+void DestroyDisplay(Display *);
+
+void ClearScreen(const Display *, uint32_t color);
 void Delay(uint32_t msec);
-void DrawLine(const struct Screen *, int x1, int y1, int x2, int y2);
+void DrawLine(const Display *, int x1, int y1, int x2, int y2);
 
 // drawText renders a string to screen coordinates x and y in the
 // font and color given.  It is a convenience method that
 //   - creates surface
 //   - a texture from that surface
 //   - renders the texture
-void DrawText(const struct Screen *,
+void DrawText(const Display *,
               int x, int y, const char *str,
               int font, uint32_t color);
-void Flip(const struct Screen *);
-void SetPenColor(struct Screen *, uint32_t color);
+void FlipDisplay(const Display *);
+void PenColor(Display *, uint32_t color);
+
+#endif

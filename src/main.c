@@ -1,13 +1,13 @@
+#include <stdio.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
-#include "screen.h"
+#include "display.h"
 #include "tic.h"
 #include "colors.h"
 
-struct Screen *screen = NULL;
-
 int main(int argc, char *argv[])
 {
+    struct Display *display = NULL;
     const char *filename = "main.lua";
 
     // process program arguments
@@ -16,7 +16,6 @@ int main(int argc, char *argv[])
     }
 
     // Initialize SDL
-    fprintf(stderr, "Initializing SDL\n");
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         fprintf(stderr, "SDL Init: %s\n", SDL_GetError());
         return 1;
@@ -25,26 +24,23 @@ int main(int argc, char *argv[])
         fprintf(stderr, "TTF Init: %s\n", TTF_GetError());
         return 1;
     }
-    fprintf(stderr, "Create Screen (windowed mode)\n");
-    screen = CreateScreen(LIGHT_GRAY, SDL_RENDERER_ACCELERATED);
-    if (!screen) {
-        fprintf(stderr, "Create Screen failed.");
+    display = CreateDisplay(LIGHT_GRAY, SDL_RENDERER_ACCELERATED);
+    if (display == NULL) {
+        fprintf(stderr, "Failed to Create Display.");
         return 1;
     }
 
     // execute lua file
-    fprintf(stderr, "Starting TIC-20 with %s\n", filename);
-    int exitcode = TicMain(filename);
-    if (exitcode) {
-        fprintf(stderr, "%s\n", GetTicError());
-    } else {
-        fprintf(stderr, "Shutting down\n");
+    fprintf(stderr, "Executing %s\n", filename);
+    int status = TicExec(filename, display);
+    if (status) {
+        fprintf(stderr, "%s\n", TicError());
     }
 
     // cleanup and exit
-    DestroyScreen(screen);
+    DestroyDisplay(display);
     SDL_Quit();
 
     // return the exit code that lua returned
-    return exitcode;
+    return status;
 }

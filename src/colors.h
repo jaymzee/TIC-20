@@ -1,3 +1,6 @@
+#ifndef TIC_COLORS_H_INCLUDED
+#define TIC_COLORS_H_INCLUDED
+
 // 32-bit color values (r, g, b, a)
 
 #define BLACK 0x000000ff
@@ -12,3 +15,5 @@
 #define DARK_GRAY 0x555555ff
 #define LIGHT_GRAY 0xaaaaaaff
 #define WHITE 0xffffffff
+
+#endif
