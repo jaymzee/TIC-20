@@ -139,6 +139,11 @@ void DrawLine(const Display *display, int x1, int y1, int x2, int y2)
     SDL_RenderDrawLine(display->renderer, x1, y1, x2, y2);
 }
 
+void DrawPoint(const Display *display, int x, int y)
+{
+    SDL_RenderDrawPoint(display->renderer, x, y);
+}
+
 void FlipDisplay(const Display *display)
 {
     SDL_RenderPresent(display->renderer);

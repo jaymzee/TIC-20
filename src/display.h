@@ -20,17 +20,19 @@ void DestroyDisplay(Display *);
 void ClearScreen(const Display *, uint32_t backcolor);
 void Delay(uint32_t msec);
 void DrawLine(const Display *, int x1, int y1, int x2, int y2);
+void DrawPoint(const Display *, int x, int y);
 
 // drawText renders a string to screen coordinates x and y in the
 // font and color given.  It is a convenience method that
 //   - creates surface
 //   - a texture from that surface
 //   - renders the texture
+// returns 1 on success and 0 on failure
 int DrawText(const Display *,
              int x, int y, const char *str,
              uint32_t color, uint8_t font_slot);
 void FlipDisplay(const Display *);
-void PenColor(Display *, uint32_t color);
 const char *LoadFont(Display *display, uint8_t slot, const char *fontpath, int size);
+void PenColor(Display *, uint32_t color);
 
 #endif
