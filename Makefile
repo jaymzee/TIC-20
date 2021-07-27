@@ -11,4 +11,4 @@ tic20 : main.c display.c tic.c
 	$(CC) $(CFLAGS) -o $@ $^ $(LFLAGS)
 
 clean:
-	rm -rf tic20
+	rm -f tic20
