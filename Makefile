@@ -1,6 +1,6 @@
 CC = gcc
-CFLAGS = -g -Wall -I/usr/include/lua5.2
-LFLAGS = -llua5.2 -lSDL2 -lSDL2_ttf
+CFLAGS = -g -I/usr/include/lua5.2
+LFLAGS = -llua5.2
 
 vpath %.c src
 vpath %.h src

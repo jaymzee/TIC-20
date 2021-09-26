@@ -3,21 +3,17 @@
 
 #include <stdint.h>
 
-#define SCREEN_WIDTH 640
-#define SCREEN_HEIGHT 480
+#define SCREEN_WIDTH 1280
+#define SCREEN_HEIGHT 1024
 #define SCREEN_CENTER_X (SCREEN_WIDTH / 2)
 #define SCREEN_CENTER_Y (SCREEN_HEIGHT / 2)
 
-#define MAX_FONTS 256
-
 typedef struct Display Display;
 
-Display *CreateDisplay(const char *window_title,
-                       uint32_t pencolor,
-                       uint32_t renderer_flags);
+Display *CreateDisplay(uint32_t pencolor);
 void DestroyDisplay(Display *);
 
-void ClearScreen(const Display *, uint32_t backcolor);
+void ClearScreen(const Display *, uint32_t color);
 void Delay(uint32_t msec);
 void DrawLine(const Display *, int x1, int y1, int x2, int y2);
 void DrawPoint(const Display *, int x, int y);
@@ -30,9 +26,8 @@ void DrawPoint(const Display *, int x, int y);
 // returns 1 on success and 0 on failure
 int DrawText(const Display *,
              int x, int y, const char *str,
-             uint32_t color, uint8_t font_slot);
+             uint32_t color);
 void FlipDisplay(const Display *);
-const char *LoadFont(Display *display, uint8_t slot, const char *fontpath, int size);
 void PenColor(Display *, uint32_t color);
 
 #endif

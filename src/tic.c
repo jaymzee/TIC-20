@@ -52,25 +52,6 @@ static int pencolor(lua_State *L)
     return 0;
 }
 
-static int loadfont(lua_State *L)
-{
-    Display *display = GetDisplay(L);
-    int slot = luaL_checknumber(L, 1);
-    const char *fontpath = luaL_checkstring(L, 2);
-    int fontsize = luaL_checknumber(L, 3);
-
-    if (slot < 0 || slot >= MAX_FONTS) {
-        luaL_error(L, "slot must be a number from 0 to %d", MAX_FONTS - 1);
-    }
-
-    const char *error = LoadFont(display, slot, fontpath, fontsize);
-    if (error) {
-        luaL_error(L, "loadfont: %s", error);
-    }
-
-    return 0;
-}
-
 static int text(lua_State *L)
 {
     Display *display = GetDisplay(L);
@@ -78,18 +59,9 @@ static int text(lua_State *L)
     double y = luaL_checknumber(L, 2);
     const char *s = luaL_checkstring(L, 3);
     unsigned int color = luaL_checknumber(L, 4);
-    int slot = 0;
 
-    if (lua_gettop(L) >= 5) {
-        slot = luaL_checknumber(L, 5);
-    }
-
-    if (slot < 0 || slot >= MAX_FONTS) {
-        luaL_error(L, "slot must be a number from 0 to %d", MAX_FONTS - 1);
-    }
-
-    if (!DrawText(display, x, y, s, color, slot)) {
-        luaL_error(L, "DrawText failed: is there a font in slot %d?", slot);
+    if (!DrawText(display, x, y, s, color)) {
+        luaL_error(L, "DrawText failed");
     }
 
     return 0;
@@ -115,13 +87,6 @@ static int point(lua_State *L)
     double y = luaL_checknumber(L, 2);
 
     DrawPoint(display, x, y);
-
-    return 0;
-}
-
-static int flip(lua_State *L)
-{
-    FlipDisplay(GetDisplay(L));
 
     return 0;
 }
@@ -164,20 +129,20 @@ int TicExec(const char *filename, Display *display)
 
     // Expose C functions to the lua environment
     lua_newtable(L);
-    addfunction(L, loadfont);
     addfunction(L, clear);
     addfunction(L, pencolor);
     addfunction(L, text);
     addfunction(L, line);
     addfunction(L, point);
-    addfunction(L, flip);
     lua_setglobal(L, "display");
+
     lua_pushcfunction(L, delay);
     lua_setglobal(L, "delay");
     lua_pushcfunction(L, peek);
     lua_setglobal(L, "peek");
     lua_pushcfunction(L, poke);
     lua_setglobal(L, "poke");
+
     lua_pushstring(L, filename);
     lua_setglobal(L, "__name__");
     lua_pushnumber(L, (intptr_t)display);

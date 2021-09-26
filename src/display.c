@@ -1,85 +1,94 @@
+#include <errno.h>
+#include <fcntl.h>
+#include <linux/fb.h>
 #include <stdio.h>
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_ttf.h>
+#include <stdlib.h>
+#include <sys/ioctl.h>
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <time.h>
+#include <unistd.h>
 #include "display.h"
+#include "font8x8_basic.h"
+
+#define FBDEV "/dev/fb0"
+
+void query_framebuffer(const char *device, struct fb_var_screeninfo *fbinfo) {
+    int fd = open(device, O_RDWR);
+    if (fd < 0) {
+        perror(device);
+        exit(1);
+    }
+    ioctl(fd, FBIOGET_VSCREENINFO, fbinfo);
+    close(fd);
+}
 
 typedef struct Display {
-    SDL_Window *window;
-    SDL_Renderer *renderer;
-    TTF_Font *font[MAX_FONTS];
+    struct fb_var_screeninfo fbinf;
+    uint32_t *fb;
+    size_t   fblen;
     uint32_t pencolor;
 } Display;
 
-Display *CreateDisplay(const char *window_title,
-                       uint32_t pencolor,
-                       uint32_t renderer_flags)
+Display *CreateDisplay(uint32_t pencolor)
 {
-    SDL_Window *window;
-    SDL_Renderer *renderer;
-    TTF_Font *font;
+    Display *disp = calloc(1, sizeof(Display));
+    if (!disp) {
+        fprintf(stderr, "out of memory\n");
+        exit(1);
+    }
+    query_framebuffer(FBDEV, &disp->fbinf);
 
-    // create a winodw, renderer, and font
-
-    window = SDL_CreateWindow(
-        window_title,
-        SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-        SCREEN_WIDTH, SCREEN_HEIGHT,
-        SDL_WINDOW_SHOWN
-    );
-    if (window == NULL) {
-        fprintf(stderr, "Create Window:%s\n", SDL_GetError());
-        return NULL;
+    // validate fbinfo
+    if (!disp->fbinf.xres || !disp->fbinf.yres) {
+        fprintf(stderr, "invalid framebuffer resolution\n");
+        exit(1);
+    }
+    if (disp->fbinf.bits_per_pixel != 32) {
+        fprintf(stderr, "32 bpp expected\n");
+        exit(1);
     }
 
-    renderer = SDL_CreateRenderer(window, -1, renderer_flags);
-    if (renderer == NULL) {
-        fprintf(stderr, "Create Renderer:%s\n", SDL_GetError());
-        return NULL;
-    }
-    if (SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)) {
-        fprintf(stderr, "Blend Mode:%s\n", SDL_GetError());
-    }
+    disp->fblen = 4 * disp->fbinf.xres_virtual * disp->fbinf.yres;
 
-    font = TTF_OpenFont("fonts/DejaVuSans.ttf", 18);
-    if (font == NULL) {
-        fprintf(stderr, "Open Font: %s\n", TTF_GetError());
-        return NULL;
+    // open framebuffer
+    int fd = open(FBDEV, O_RDWR);
+    if (fd < 0) {
+        perror(FBDEV);
+        exit(1);
     }
+    // get writable screen memory; 32bit color
+    uint32_t *fb = mmap(NULL,
+                        disp->fblen,
+                        PROT_READ | PROT_WRITE,
+                        MAP_SHARED,
+                        fd,
+                        0);
+    if (fb == NULL) {
+        fprintf(stderr, "mmap fb failed\n");
+        exit(1);
+    }
+    disp->fb = fb;
 
-    Display *display = calloc(1, sizeof(Display));
-    display->window = window;
-    display->renderer = renderer;
-    display->font[0] = font;
-    PenColor(display, pencolor);
+    // disable cursor
+    printf("\033[?1c");
+    fflush(stdout);
 
-    return display;
+    PenColor(disp, pencolor);
+
+    return disp;
 }
 
 void DestroyDisplay(Display *display)
 {
-    for (int i = 0; i < MAX_FONTS; i++) {
-        TTF_Font *font = display->font[i];
-        if (font) {
-            TTF_CloseFont(font);
-        }
-    }
-    SDL_DestroyRenderer(display->renderer);
-    SDL_DestroyWindow(display->window);
+    // restore cursor
+    printf("\033[?0c");
+    // clear screen
+    printf("\033[2J\033[H");
+
+    munmap(display->fb, display->fblen);
     free(display);
-}
-
-// return error string on failure, null on success
-const char *LoadFont(Display *display, uint8_t slot, const char *fontpath, int size)
-{
-    TTF_Font *font = TTF_OpenFont(fontpath, size);
-
-    if (!font) {
-        return TTF_GetError();
-    }
-
-    display->font[slot] = font;
-
-    return NULL;
 }
 
 // drawText renders a string to screen coordinates x and y in the
@@ -91,39 +100,60 @@ const char *LoadFont(Display *display, uint8_t slot, const char *fontpath, int s
 // the usual failure is an invalid font number
 int DrawText(const Display *display,
              int x, int y, const char *str,
-             uint32_t color, uint8_t font_slot)
+             uint32_t color)
 {
-    SDL_Renderer *renderer = display->renderer;
-    TTF_Font *font = display->font[font_slot];
-    SDL_Color color_ = { color >> 24, color >> 16, color >> 8, color };
+    uint32_t *fb = display->fb;
+    int stride = display->fbinf.xres_virtual;
+    color = color >> 8;
 
-    if (font == NULL) {
-        return 0;
+    for (int n = 0; str[n]; n++) {
+        uint8_t c = str[n] & 0x7f; // strip off 8th bit
+        for (int i = 0; i < 8; i++) {
+            uint8_t d = font8x8_basic[c][i];
+            for (int j = 0; j < 8; j++) {
+                int offset = x + j*2 + (y+i*4)*stride;
+                if (d & 1) {
+                    fb[offset] = color;
+                    fb[offset + 1] = color;
+                    fb[offset + stride] = color;
+                    fb[offset + stride + 1] = color;
+                    fb[offset + 2*stride] = color;
+                    fb[offset + 2*stride + 1] = color;
+                    fb[offset + 3*stride] = color;
+                    fb[offset + 3*stride + 1] = color;
+                } else {
+                    fb[offset] = 0;
+                    fb[offset + 1] = 0;
+                    fb[offset + stride] = 0;
+                    fb[offset + stride + 1] = 0;
+                    fb[offset + 2*stride] = 0;
+                    fb[offset + 2*stride + 1] = 0;
+                    fb[offset + 3*stride] = 0;
+                    fb[offset + 3*stride + 1] = 0;
+                }
+                d = d >> 1;
+            }
+        }
+        x += 16;
     }
-
-    SDL_Rect rect = {x, y, 0, 0};
-    SDL_Surface* surface = TTF_RenderText_Blended(font, str, color_);
-    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
-    SDL_QueryTexture(texture, NULL, NULL, &rect.w, &rect.h);
-    SDL_RenderCopy(renderer, texture, NULL, &rect);
-    SDL_DestroyTexture(texture);
-    SDL_FreeSurface(surface);
 
     return 1;
 }
 
-void ClearScreen(const Display *display, uint32_t color)
+void ClearScreen(const Display *disp, uint32_t color)
 {
-    SDL_Renderer *renderer = display->renderer;
-    uint8_t r = color >> 24, g = color >> 16, b = color >> 8, a = color;
+    uint32_t *fb = disp->fb;
+    int stride = disp->fbinf.xres_virtual;
+    color = color >> 8;
 
-    SDL_SetRenderDrawColor(renderer, r, g, b, a);
-    SDL_RenderClear(renderer);
+    printf("\033[2J\033[H");
+    fflush(stdout);
 
-    color = display->pencolor;
-    r = color >> 24, g = color >> 16, b = color >> 8, a = color;
-
-    SDL_SetRenderDrawColor(renderer, r, g, b, a);
+    for (int i = 0; i < disp->fbinf.yres; i++) {
+        for (int j = 0; j < disp->fbinf.xres; j++) {
+            fb[i*stride + j] = color;
+        }
+    }
 }
 
 void PenColor(Display *display, uint32_t color)
@@ -131,26 +161,62 @@ void PenColor(Display *display, uint32_t color)
     uint8_t r = color >> 24, g = color >> 16, b = color >> 8, a = color;
 
     display->pencolor = color;
-    SDL_SetRenderDrawColor(display->renderer, r, g, b, a);
 }
 
 void DrawLine(const Display *display, int x1, int y1, int x2, int y2)
 {
-    SDL_RenderDrawLine(display->renderer, x1, y1, x2, y2);
 }
 
 void DrawPoint(const Display *display, int x, int y)
 {
-    SDL_RenderDrawPoint(display->renderer, x, y);
-}
-
-void FlipDisplay(const Display *display)
-{
-    SDL_RenderPresent(display->renderer);
 }
 
 void Delay(uint32_t msec)
 {
-    SDL_Delay(msec);
+    struct timespec req, rem;
+    uint32_t sec = msec / 1000;
+    msec -= sec * 1000;
+
+    req.tv_sec = sec;
+    req.tv_nsec = msec * 1000000;
+
+    nanosleep(&req, &rem);
 }
 
+
+// 32x16 font blocky (stretched 8x8 font)
+void draw_text(uint32_t *fb, struct fb_var_screeninfo *fbinfo,
+               char *str, int x, int y, int color)
+{
+    int stride = fbinfo->xres_virtual;
+    for (int n = 0; str[n]; n++) {
+        uint8_t c = str[n] & 0x7f; // strip off 8th bit
+        for (int i = 0; i < 8; i++) {
+            uint8_t d = font8x8_basic[c][i];
+            for (int j = 0; j < 8; j++) {
+                int offset = x + j*2 + (y+i*4)*stride;
+                if (d & 1) {
+                    fb[offset] = color;
+                    fb[offset + 1] = color;
+                    fb[offset + stride] = color;
+                    fb[offset + stride + 1] = color;
+                    fb[offset + 2*stride] = color;
+                    fb[offset + 2*stride + 1] = color;
+                    fb[offset + 3*stride] = color;
+                    fb[offset + 3*stride + 1] = color;
+                } else {
+                    fb[offset] = 0;
+                    fb[offset + 1] = 0;
+                    fb[offset + stride] = 0;
+                    fb[offset + stride + 1] = 0;
+                    fb[offset + 2*stride] = 0;
+                    fb[offset + 2*stride + 1] = 0;
+                    fb[offset + 3*stride] = 0;
+                    fb[offset + 3*stride + 1] = 0;
+                }
+                d = d >> 1;
+            }
+        }
+        x += 16;
+    }
+}
