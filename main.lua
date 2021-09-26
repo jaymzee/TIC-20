@@ -16,5 +16,5 @@ display.pencolor(CYAN)
 for x = 20, 620, 5 do
 	display.point(x, 100)
 end
-delay(500)
+delay(2000)
 print("done.")

@@ -167,8 +167,13 @@ void DrawLine(const Display *display, int x1, int y1, int x2, int y2)
 {
 }
 
-void DrawPoint(const Display *display, int x, int y)
+void DrawPoint(const Display *disp, int x, int y)
 {
+    uint32_t *fb = disp->fb;
+    int stride = disp->fbinf.xres_virtual;
+    uint32_t color = disp->pencolor >> 8;
+
+    fb[y*stride + x] = color;
 }
 
 void Delay(uint32_t msec)
@@ -181,42 +186,4 @@ void Delay(uint32_t msec)
     req.tv_nsec = msec * 1000000;
 
     nanosleep(&req, &rem);
-}
-
-
-// 32x16 font blocky (stretched 8x8 font)
-void draw_text(uint32_t *fb, struct fb_var_screeninfo *fbinfo,
-               char *str, int x, int y, int color)
-{
-    int stride = fbinfo->xres_virtual;
-    for (int n = 0; str[n]; n++) {
-        uint8_t c = str[n] & 0x7f; // strip off 8th bit
-        for (int i = 0; i < 8; i++) {
-            uint8_t d = font8x8_basic[c][i];
-            for (int j = 0; j < 8; j++) {
-                int offset = x + j*2 + (y+i*4)*stride;
-                if (d & 1) {
-                    fb[offset] = color;
-                    fb[offset + 1] = color;
-                    fb[offset + stride] = color;
-                    fb[offset + stride + 1] = color;
-                    fb[offset + 2*stride] = color;
-                    fb[offset + 2*stride + 1] = color;
-                    fb[offset + 3*stride] = color;
-                    fb[offset + 3*stride + 1] = color;
-                } else {
-                    fb[offset] = 0;
-                    fb[offset + 1] = 0;
-                    fb[offset + stride] = 0;
-                    fb[offset + stride + 1] = 0;
-                    fb[offset + 2*stride] = 0;
-                    fb[offset + 2*stride + 1] = 0;
-                    fb[offset + 3*stride] = 0;
-                    fb[offset + 3*stride + 1] = 0;
-                }
-                d = d >> 1;
-            }
-        }
-        x += 16;
-    }
 }
