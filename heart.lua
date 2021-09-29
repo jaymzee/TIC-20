@@ -1,14 +1,14 @@
 require 'colors'
 
-FPS = 30
 POINTS = 500
-CX = 320
-CY = 240
-R = 200
+CX = 640
+CY = 512
+R = 400
 
 KEEP_RUNNING = 0x55aa -- flag in TIC memory (readonly)
 
 function frame (factor)
+	display.clear(BLACK)
 	for n = 0, POINTS do
 		local n1 = n
 		local n2 = factor * n1
@@ -21,8 +21,7 @@ function frame (factor)
 		display.line(CX - x1, CY - y1, CX - x2, CY - y2)
 	end
 	--display.text(10, 10, string.format("factor %.1f", factor), YELLOW)
-	display.flip()
-	display.clear(BLACK)
+	delay(100)
 end
 
 function main ()
@@ -37,7 +36,7 @@ function main ()
 	factor = 1
 	while peek(KEEP_RUNNING) ~= 0 do
 		frame(factor)
-		factor = factor + 0.001
+		factor = factor + 0.05
 	end
 end
 

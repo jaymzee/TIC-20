@@ -13,6 +13,7 @@
 #include "font8x8_basic.h"
 
 #define FBDEV "/dev/fb0"
+#define ABS(x) ((x) >= 0 ? (x) : (-x))
 
 void query_framebuffer(const char *device, struct fb_var_screeninfo *fbinfo) {
     int fd = open(device, O_RDWR);
@@ -163,8 +164,53 @@ void PenColor(Display *display, uint32_t color)
     display->pencolor = color;
 }
 
-void DrawLine(const Display *display, int x1, int y1, int x2, int y2)
+// Midpoint algorithm for 2D line
+void DrawLine(const Display *disp, int x0, int y0, int x1, int y1)
 {
+    uint32_t *fb = disp->fb;
+    int stride = disp->fbinf.xres_virtual;
+    uint32_t color = disp->pencolor >> 8;
+
+    const int dx = x1 - x0;
+    const int dy = y1 - y0;
+    const int incx = x1 > x0 ? 1 : -1;
+    const int incy = y1 > y0 ? 1 : -1;
+
+    int x = x0;
+    int y = y0;
+
+    fb[y*stride + x] = color;
+    if (ABS(dx) > ABS(dy)) {
+        const int incrE = 2 * ABS(dy);
+        const int incrSE = 2 * (ABS(dy) - ABS(dx));
+        int d = 2 * ABS(dy) - ABS(dx);
+        while (x != x1) {
+            if (d <= 0) {
+                d += incrE; // or W
+                x += incx;
+            } else {
+                d += incrSE; // or NE, NW, SW
+                x += incx;
+                y += incy;
+            }
+            fb[y*stride + x] = color;
+        }
+    } else {
+        const int incrS = 2 * ABS(dx);
+        const int incrSE = 2 * (ABS(dx) - ABS(dy));
+        int d = 2 * ABS(dx) - ABS(dy);
+        while (y != y1) {
+            if (d <= 0) {
+                d += incrS; // or N
+                y += incy;
+            } else {
+                d += incrSE; // or SW, NW, NE
+                x += incx;
+                y += incy;
+            }
+            fb[y*stride + x] = color;
+        }
+    }
 }
 
 void DrawPoint(const Display *disp, int x, int y)
