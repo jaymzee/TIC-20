@@ -27,7 +27,7 @@ void DrawPoint(const Display *, int x, int y);
 int DrawText(const Display *,
              int x, int y, const char *str,
              uint32_t color);
-void FlipDisplay(const Display *);
+void FlipDisplay(Display *);
 void PenColor(Display *, uint32_t color);
 
 #endif

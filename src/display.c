@@ -3,6 +3,7 @@
 #include <linux/fb.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/types.h>
@@ -26,10 +27,13 @@ void query_framebuffer(const char *device, struct fb_var_screeninfo *fbinfo) {
 }
 
 typedef struct Display {
-    struct fb_var_screeninfo fbinf;
+    struct   fb_var_screeninfo fbinf;
     uint32_t *fb;
     size_t   fblen;
     uint32_t pencolor;
+    int      backindx;  // 0 or 1
+    uint32_t *back;
+    int      fd;
 } Display;
 
 Display *CreateDisplay(uint32_t pencolor)
@@ -51,7 +55,8 @@ Display *CreateDisplay(uint32_t pencolor)
         exit(1);
     }
 
-    disp->fblen = 4 * disp->fbinf.xres_virtual * disp->fbinf.yres;
+    // double buffer and 4 bytes per pixel
+    disp->fblen = 2 * 4 * disp->fbinf.xres_virtual * disp->fbinf.yres;
 
     // open framebuffer
     int fd = open(FBDEV, O_RDWR);
@@ -71,12 +76,15 @@ Display *CreateDisplay(uint32_t pencolor)
         exit(1);
     }
     disp->fb = fb;
+    disp->back = malloc(disp->fblen / 2);
 
     // disable cursor
     printf("\033[?1c");
     fflush(stdout);
 
     PenColor(disp, pencolor);
+
+    disp->backindx = 1;
 
     return disp;
 }
@@ -86,10 +94,30 @@ void DestroyDisplay(Display *display)
     // restore cursor
     printf("\033[?0c");
     // clear screen
-    printf("\033[2J\033[H");
+    //printf("\033[2J\033[H");
 
     munmap(display->fb, display->fblen);
+    free(display->back);
+    close(display->fd);
     free(display);
+}
+
+void FlipDisplay(Display *disp)
+{
+    int stride = disp->fbinf.xres_virtual * 4;
+    int yres = disp->fbinf.yres;
+    int newvisindx = disp->backindx;
+    int newbackindx = disp->backindx ^ 1;
+    int newvisyoff = newvisindx * yres;
+    int oldvisyoff = disp->backindx * yres;
+
+    disp->fbinf.yoffset = newvisyoff;
+    disp->backindx = newbackindx;
+
+    printf("%d %d %d %d\n", newvisyoff, stride * newvisyoff, disp->fblen, disp->fblen / 2);
+    memcpy((void *)disp->fb + stride*newvisyoff, disp->back, disp->fblen / 2);
+
+    ioctl(disp->fd, FBIOPAN_DISPLAY, &disp->fbinf);
 }
 
 // drawText renders a string to screen coordinates x and y in the
@@ -103,7 +131,7 @@ int DrawText(const Display *display,
              int x, int y, const char *str,
              uint32_t color)
 {
-    uint32_t *fb = display->fb;
+    uint32_t *fb = display->back;
     int stride = display->fbinf.xres_virtual;
     color = color >> 8;
 
@@ -143,7 +171,7 @@ int DrawText(const Display *display,
 
 void ClearScreen(const Display *disp, uint32_t color)
 {
-    uint32_t *fb = disp->fb;
+    uint32_t *fb = disp->back;
     int stride = disp->fbinf.xres_virtual;
     color = color >> 8;
 
@@ -167,7 +195,7 @@ void PenColor(Display *display, uint32_t color)
 // Midpoint algorithm for 2D line
 void DrawLine(const Display *disp, int x0, int y0, int x1, int y1)
 {
-    uint32_t *fb = disp->fb;
+    uint32_t *fb = disp->back;
     int stride = disp->fbinf.xres_virtual;
     uint32_t color = disp->pencolor >> 8;
 
@@ -215,7 +243,7 @@ void DrawLine(const Display *disp, int x0, int y0, int x1, int y1)
 
 void DrawPoint(const Display *disp, int x, int y)
 {
-    uint32_t *fb = disp->fb;
+    uint32_t *fb = disp->back;
     int stride = disp->fbinf.xres_virtual;
     uint32_t color = disp->pencolor >> 8;
 

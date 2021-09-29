@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <signal.h>
 #include "display.h"
 #include "tic.h"
@@ -32,6 +33,8 @@ int main(int argc, char *argv[])
     int status = TicExec(filename, display);
     if (status) {
         fprintf(stderr, "%s\n", TicError());
+        // TODO: restore display but don't clear it
+        exit(1);
     }
 
     // cleanup and exit
