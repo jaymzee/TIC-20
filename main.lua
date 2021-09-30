@@ -2,17 +2,18 @@ require 'colors'
 
 --display.text(10,10, "hey", RED)
 --display.clear(BLUE)
-display.text(250, 240, "Hello, World!", BLUE)
+display.text(250, 240, "one", YELLOW)
 display.flip()
 
 delay(1000)
 
-display.clear(BROWN)
+--display.clear(BROWN)
+display.text(250, 240, "two", YELLOW)
 display.flip()
 
 delay(1000)
 
-display.text(250, 240, "Hello, World!!!", GREEN)
+display.text(250, 240, "three", GREEN)
 display.flip()
 
 delay(1000)

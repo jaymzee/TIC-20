@@ -31,9 +31,9 @@ typedef struct Display {
     uint32_t *fb;
     size_t   fblen;
     uint32_t pencolor;
-    int      backindx;  // 0 or 1
+    int      fbfd;
+    int      flip;  // 0 or 1
     uint32_t *back;
-    int      fd;
 } Display;
 
 Display *CreateDisplay(uint32_t pencolor)
@@ -75,6 +75,7 @@ Display *CreateDisplay(uint32_t pencolor)
         fprintf(stderr, "mmap fb failed\n");
         exit(1);
     }
+    disp->fbfd = fd;
     disp->fb = fb;
     disp->back = malloc(disp->fblen / 2);
 
@@ -84,7 +85,7 @@ Display *CreateDisplay(uint32_t pencolor)
 
     PenColor(disp, pencolor);
 
-    disp->backindx = 1;
+    disp->flip = 1;
 
     return disp;
 }
@@ -98,26 +99,27 @@ void DestroyDisplay(Display *display)
 
     munmap(display->fb, display->fblen);
     free(display->back);
-    close(display->fd);
+    close(display->fbfd);
     free(display);
 }
 
 void FlipDisplay(Display *disp)
 {
-    int stride = disp->fbinf.xres_virtual * 4;
     int yres = disp->fbinf.yres;
-    int newvisindx = disp->backindx;
-    int newbackindx = disp->backindx ^ 1;
-    int newvisyoff = newvisindx * yres;
-    int oldvisyoff = disp->backindx * yres;
+    int stride = disp->fbinf.xres_virtual;
+    int vis = disp->flip;
+    int back = 1 ^ vis;
 
-    disp->fbinf.yoffset = newvisyoff;
-    disp->backindx = newbackindx;
+    printf("%d\n", vis);
+    disp->fbinf.yoffset = vis * 16;
+    disp->flip = back;
 
-    printf("%d %d %d %d\n", newvisyoff, stride * newvisyoff, disp->fblen, disp->fblen / 2);
-    memcpy((void *)disp->fb + stride*newvisyoff, disp->back, disp->fblen / 2);
-
-    ioctl(disp->fd, FBIOPAN_DISPLAY, &disp->fbinf);
+    memcpy(&disp->fb[vis*stride*yres], disp->back, disp->fblen / 2);
+    int rv = ioctl(disp->fbfd, FBIOPAN_DISPLAY, &disp->fbinf);
+    if (rv < 0) {
+        perror("flip display");
+        exit(1);
+    }
 }
 
 // drawText renders a string to screen coordinates x and y in the
