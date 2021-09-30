@@ -91,6 +91,12 @@ static int point(lua_State *L)
     return 0;
 }
 
+static int flip(lua_State *L)
+{
+    // flip is a noop in this version
+    return 0;
+}
+
 static int delay(lua_State *L)
 {
     unsigned int msec = luaL_checknumber(L, 1);
@@ -134,6 +140,7 @@ int TicExec(const char *filename, Display *display)
     addfunction(L, text);
     addfunction(L, line);
     addfunction(L, point);
+    addfunction(L, flip);
     lua_setglobal(L, "display");
 
     lua_pushcfunction(L, delay);

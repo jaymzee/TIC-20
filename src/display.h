@@ -13,7 +13,7 @@ typedef struct Display Display;
 Display *CreateDisplay(uint32_t pencolor);
 void DestroyDisplay(Display *);
 
-void ClearScreen(const Display *, uint32_t color);
+void ClearScreen(Display *, uint32_t color);
 void Delay(uint32_t msec);
 void DrawLine(const Display *, int x1, int y1, int x2, int y2);
 void DrawPoint(const Display *, int x, int y);

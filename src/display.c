@@ -30,6 +30,7 @@ typedef struct Display {
     uint32_t *fb;
     size_t   fblen;
     uint32_t pencolor;
+    uint32_t backcolor;
 } Display;
 
 Display *CreateDisplay(uint32_t pencolor)
@@ -86,7 +87,7 @@ void DestroyDisplay(Display *display)
     // restore cursor
     printf("\033[?0c");
     // clear screen
-    printf("\033[2J\033[H");
+    // printf("\033[2J\033[H");
 
     munmap(display->fb, display->fblen);
     free(display);
@@ -105,6 +106,7 @@ int DrawText(const Display *display,
 {
     uint32_t *fb = display->fb;
     int stride = display->fbinf.xres_virtual;
+    int backcolor = display->backcolor >> 8;
     color = color >> 8;
 
     for (int n = 0; str[n]; n++) {
@@ -123,14 +125,14 @@ int DrawText(const Display *display,
                     fb[offset + 3*stride] = color;
                     fb[offset + 3*stride + 1] = color;
                 } else {
-                    fb[offset] = 0;
-                    fb[offset + 1] = 0;
-                    fb[offset + stride] = 0;
-                    fb[offset + stride + 1] = 0;
-                    fb[offset + 2*stride] = 0;
-                    fb[offset + 2*stride + 1] = 0;
-                    fb[offset + 3*stride] = 0;
-                    fb[offset + 3*stride + 1] = 0;
+                    fb[offset] = backcolor;
+                    fb[offset + 1] = backcolor;
+                    fb[offset + stride] = backcolor;
+                    fb[offset + stride + 1] = backcolor;
+                    fb[offset + 2*stride] = backcolor;
+                    fb[offset + 2*stride + 1] = backcolor;
+                    fb[offset + 3*stride] = backcolor;
+                    fb[offset + 3*stride + 1] = backcolor;
                 }
                 d = d >> 1;
             }
@@ -141,10 +143,12 @@ int DrawText(const Display *display,
     return 1;
 }
 
-void ClearScreen(const Display *disp, uint32_t color)
+void ClearScreen(Display *disp, uint32_t color)
 {
     uint32_t *fb = disp->fb;
     int stride = disp->fbinf.xres_virtual;
+
+    disp->backcolor = color;
     color = color >> 8;
 
     printf("\033[2J\033[H");
@@ -159,8 +163,6 @@ void ClearScreen(const Display *disp, uint32_t color)
 
 void PenColor(Display *display, uint32_t color)
 {
-    uint8_t r = color >> 24, g = color >> 16, b = color >> 8, a = color;
-
     display->pencolor = color;
 }
 
@@ -179,12 +181,15 @@ void DrawLine(const Display *disp, int x0, int y0, int x1, int y1)
     int x = x0;
     int y = y0;
 
-    fb[y*stride + x] = color;
+    // TODO: clip if x0 or y0 are negative
+
+    fb[y0*stride + x0] = color;
     if (ABS(dx) > ABS(dy)) {
+        const int xres = disp->fbinf.xres;
         const int incrE = 2 * ABS(dy);
         const int incrSE = 2 * (ABS(dy) - ABS(dx));
         int d = 2 * ABS(dy) - ABS(dx);
-        while (x != x1) {
+        while (x >= 0 && x < xres && x != x1) {
             if (d <= 0) {
                 d += incrE; // or W
                 x += incx;
@@ -196,10 +201,11 @@ void DrawLine(const Display *disp, int x0, int y0, int x1, int y1)
             fb[y*stride + x] = color;
         }
     } else {
+        const int yres = disp->fbinf.yres;
         const int incrS = 2 * ABS(dx);
         const int incrSE = 2 * (ABS(dx) - ABS(dy));
         int d = 2 * ABS(dx) - ABS(dy);
-        while (y != y1) {
+        while (y >= 0 && y < yres && y != y1) {
             if (d <= 0) {
                 d += incrS; // or N
                 y += incy;
