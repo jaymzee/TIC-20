@@ -34,5 +34,6 @@ end
 if __name__ == 'colors.lua' then
 	display.clear(BLACK)
 	display_colors()
+	display.flip()
 	delay(5000)
 end

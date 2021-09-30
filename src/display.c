@@ -15,6 +15,7 @@
 
 #define FBDEV "/dev/fb0"
 #define ABS(x) ((x) >= 0 ? (x) : (-x))
+#define PANDISPLAY 0
 
 void query_framebuffer(const char *device, struct fb_var_screeninfo *fbinfo) {
     int fd = open(device, O_RDWR);
@@ -105,21 +106,27 @@ void DestroyDisplay(Display *display)
 
 void FlipDisplay(Display *disp)
 {
+#if PANDISPLAY
+    // FBIOPAN_DISPLAY crashes the display buffer sometimes requiring a reboot
     int yres = disp->fbinf.yres;
     int stride = disp->fbinf.xres_virtual;
     int vis = disp->flip;
     int back = 1 ^ vis;
 
-    printf("%d\n", vis);
-    disp->fbinf.yoffset = vis * 16;
+    disp->fbinf.yoffset = vis * yres;
     disp->flip = back;
 
     memcpy(&disp->fb[vis*stride*yres], disp->back, disp->fblen / 2);
+
     int rv = ioctl(disp->fbfd, FBIOPAN_DISPLAY, &disp->fbinf);
     if (rv < 0) {
         perror("flip display");
         exit(1);
     }
+#else
+    /* so do it this less desirable way instead */
+    memcpy(disp->fb, disp->back, disp->fblen / 2);
+#endif
 }
 
 // drawText renders a string to screen coordinates x and y in the
@@ -189,8 +196,6 @@ void ClearScreen(const Display *disp, uint32_t color)
 
 void PenColor(Display *display, uint32_t color)
 {
-    uint8_t r = color >> 24, g = color >> 16, b = color >> 8, a = color;
-
     display->pencolor = color;
 }
 

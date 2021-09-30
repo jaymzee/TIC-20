@@ -20,7 +20,8 @@ function frame (factor)
 		local y2 = R * math.sin(phi)
 		display.line(CX - x1, CY - y1, CX - x2, CY - y2)
 	end
-	--display.text(10, 10, string.format("factor %.1f", factor), YELLOW)
+	display.text(10, 10, string.format("factor %.1f", factor), YELLOW)
+	display.flip()
 	delay(100)
 end
 
